@@ -1,0 +1,19 @@
+.subtitle {
+  color: var(--color-muted);
+  margin-top: -0.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+}
+
+.hint {
+  font-size: 0.78rem;
+  color: var(--color-muted);
+  margin-top: 1rem;
+  margin-bottom: 0;
+}
+
+.hint code {
+  background: #f0f2f3;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+}

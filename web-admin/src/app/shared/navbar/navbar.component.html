@@ -1,0 +1,31 @@
+<nav class="navbar">
+  <div class="navbar-brand">
+    <span class="logo">🩺</span>
+    <span class="brand-text">Smart HAS <small>admin</small></span>
+  </div>
+
+  <div class="navbar-links" *ngIf="currentUser$ | async as user; else guestLinks">
+    <a
+      routerLink="/home"
+      routerLinkActive="active"
+      class="nav-link"
+    >Home</a>
+    <a
+      *ngIf="user.role === 'ADMIN'"
+      routerLink="/admin"
+      routerLinkActive="active"
+      class="nav-link"
+    >Admin</a>
+
+    <span class="navbar-user">
+      {{ user.name }} <span class="role-badge" [class.role-admin]="user.role === 'ADMIN'">{{ user.role }}</span>
+    </span>
+    <button type="button" class="btn btn-ghost" (click)="logout()">Sair</button>
+  </div>
+
+  <ng-template #guestLinks>
+    <div class="navbar-links">
+      <a routerLink="/login" routerLinkActive="active" class="nav-link">Login</a>
+    </div>
+  </ng-template>
+</nav>

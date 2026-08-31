@@ -1,0 +1,246 @@
+<div class="page">
+  <h1>Painel de administração</h1>
+  <p class="subtitle">
+    Gerencie leituras de pressão arterial e solicitações de entrega de medicamento
+    priorizadas pela AI Logistics Extension.
+  </p>
+
+  <div class="loading" *ngIf="loading">
+    <span class="spinner"></span>
+    <span>Carregando dados...</span>
+  </div>
+
+  <div class="banner banner-error" *ngIf="loadError && !loading">
+    {{ loadError }}
+    <button type="button" class="btn btn-sm" (click)="loadAll()">Tentar novamente</button>
+  </div>
+
+  <ng-container *ngIf="!loading && !loadError">
+    <div class="banner banner-error" *ngIf="deleteError">{{ deleteError }}</div>
+
+    <!-- Create delivery request form: [(ngModel)] two-way binding, validation, feedback -->
+    <section class="card">
+      <h2>Nova solicitação de entrega</h2>
+      <div class="banner banner-error" *ngIf="createError">{{ createError }}</div>
+      <div class="banner banner-success" *ngIf="createSuccess">{{ createSuccess }}</div>
+
+      <form #deliveryForm="ngForm" (ngSubmit)="submitDelivery(deliveryForm)" novalidate>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="medicationName">Medicamento</label>
+            <input
+              id="medicationName"
+              name="medicationName"
+              type="text"
+              required
+              minlength="2"
+              [(ngModel)]="newDelivery.medicationName"
+              #medicationName="ngModel"
+              placeholder="Losartana 50mg"
+              [class.invalid]="medicationName.invalid && medicationName.touched"
+            />
+            <span class="field-hint" *ngIf="medicationName.invalid && medicationName.touched">
+              Informe o nome do medicamento.
+            </span>
+          </div>
+
+          <div class="form-field">
+            <label for="quantity">Quantidade</label>
+            <input
+              id="quantity"
+              name="quantity"
+              type="number"
+              required
+              min="1"
+              [(ngModel)]="newDelivery.quantity"
+              #quantity="ngModel"
+              [class.invalid]="quantity.invalid && quantity.touched"
+            />
+            <span class="field-hint" *ngIf="quantity.invalid && quantity.touched">
+              A quantidade deve ser pelo menos 1.
+            </span>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="deliveryAddress">Endereço de entrega</label>
+          <input
+            id="deliveryAddress"
+            name="deliveryAddress"
+            type="text"
+            required
+            minlength="5"
+            [(ngModel)]="newDelivery.deliveryAddress"
+            #deliveryAddress="ngModel"
+            placeholder="Rua das Flores, 123 - São Paulo/SP"
+            [class.invalid]="deliveryAddress.invalid && deliveryAddress.touched"
+          />
+          <span class="field-hint" *ngIf="deliveryAddress.invalid && deliveryAddress.touched">
+            Informe um endereço válido.
+          </span>
+        </div>
+
+        <p class="hint">
+          Risco, prioridade e janela de entrega são calculados pelo servidor a partir da
+          última leitura de pressão do paciente.
+        </p>
+
+        <button type="submit" class="btn btn-accent" [disabled]="createLoading">
+          {{ createLoading ? 'Enviando...' : 'Criar solicitação' }}
+        </button>
+      </form>
+    </section>
+
+    <!-- Readings table -->
+    <section class="card">
+      <h2>Leituras de pressão arterial</h2>
+
+      <div class="filters-bar">
+        <div class="form-field">
+          <label for="classificationFilter">Filtrar por classificação</label>
+          <select id="classificationFilter" name="classificationFilter" [(ngModel)]="classificationFilter">
+            <option value="ALL">Todas</option>
+            <option *ngFor="let c of classifications" [value]="c">{{ c }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="banner-empty" *ngIf="filteredReadings.length === 0">
+        Nenhuma leitura encontrada para o filtro selecionado.
+      </div>
+
+      <div class="table-wrap" *ngIf="filteredReadings.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Paciente</th>
+              <th>Sistólica</th>
+              <th>Diastólica</th>
+              <th>Pulso</th>
+              <th>Classificação</th>
+              <th>Medido em</th>
+              <th *ngIf="auth.isAdmin()">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let reading of filteredReadings">
+              <td>{{ reading.id }}</td>
+              <td>{{ reading.userId }}</td>
+              <td>{{ reading.systolic }}</td>
+              <td>{{ reading.diastolic }}</td>
+              <td>{{ reading.pulse }}</td>
+              <td>
+                <span class="badge" [class]="'badge-' + (reading.classification | lowercase)">
+                  {{ reading.classification }}
+                </span>
+              </td>
+              <td>{{ reading.measuredAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td *ngIf="auth.isAdmin()">
+                <button type="button" class="btn btn-danger btn-sm" (click)="deleteReading(reading)">
+                  Excluir
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Deliveries table -->
+    <section class="card">
+      <h2>Solicitações de entrega de medicamento</h2>
+
+      <div class="banner banner-error" *ngIf="statusUpdateError">{{ statusUpdateError }}</div>
+      <div class="banner banner-success" *ngIf="statusUpdateSuccess">{{ statusUpdateSuccess }}</div>
+
+      <div class="filters-bar">
+        <div class="form-field">
+          <label for="priorityFilter">Filtrar por prioridade</label>
+          <select id="priorityFilter" name="priorityFilter" [(ngModel)]="priorityFilter">
+            <option value="ALL">Todas</option>
+            <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="statusFilter">Filtrar por status</label>
+          <select id="statusFilter" name="statusFilter" [(ngModel)]="statusFilter">
+            <option value="ALL">Todos</option>
+            <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="banner-empty" *ngIf="filteredDeliveries.length === 0">
+        Nenhuma solicitação encontrada para os filtros selecionados.
+      </div>
+
+      <div class="table-wrap" *ngIf="filteredDeliveries.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Paciente</th>
+              <th>Medicamento</th>
+              <th>Qtd</th>
+              <th>Endereço</th>
+              <th>Risco</th>
+              <th>Prioridade</th>
+              <th>Janela estimada</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let delivery of filteredDeliveries">
+              <td>{{ delivery.id }}</td>
+              <td>{{ delivery.userId }}</td>
+              <td>{{ delivery.medicationName }}</td>
+              <td>{{ delivery.quantity }}</td>
+              <td>{{ delivery.deliveryAddress }}</td>
+              <td>{{ delivery.riskScore }}</td>
+              <td>
+                <span class="badge" [class]="'badge-' + (delivery.priority | lowercase)">
+                  {{ delivery.priority }}
+                </span>
+              </td>
+              <td>
+                {{ delivery.estimatedWindowStart | date: 'dd/MM HH:mm' }} –
+                {{ delivery.estimatedWindowEnd | date: 'dd/MM HH:mm' }}
+              </td>
+              <td>
+                <span class="badge" [class]="'badge-' + (delivery.status | lowercase)">
+                  {{ delivery.status }}
+                </span>
+              </td>
+              <td class="actions-cell">
+                <select
+                  [name]="'status-' + delivery.id"
+                  [(ngModel)]="statusDrafts[delivery.id]"
+                >
+                  <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+                </select>
+                <button
+                  type="button"
+                  class="btn btn-sm"
+                  [disabled]="statusUpdatingId === delivery.id || statusDrafts[delivery.id] === delivery.status"
+                  (click)="updateStatus(delivery)"
+                >
+                  {{ statusUpdatingId === delivery.id ? '...' : 'Atualizar' }}
+                </button>
+                <button
+                  *ngIf="auth.isAdmin()"
+                  type="button"
+                  class="btn btn-danger btn-sm"
+                  (click)="deleteDelivery(delivery)"
+                >
+                  Excluir
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </ng-container>
+</div>

@@ -1,0 +1,56 @@
+<div class="auth-wrap">
+  <div class="card auth-card">
+    <h1>Smart HAS</h1>
+    <p class="subtitle">Painel administrativo &mdash; entre com sua conta</p>
+
+    <div class="banner banner-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+    <div class="banner banner-success" *ngIf="successMessage">{{ successMessage }}</div>
+
+    <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)" novalidate>
+      <div class="form-field" [class.invalid]="email.invalid && email.touched">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          email
+          [(ngModel)]="email"
+          #email="ngModel"
+          placeholder="voce@exemplo.com"
+          [class.invalid]="email.invalid && email.touched"
+        />
+        <span class="field-hint" *ngIf="email.invalid && email.touched">
+          Informe um email válido.
+        </span>
+      </div>
+
+      <div class="form-field" [class.invalid]="password.invalid && password.touched">
+        <label for="password">Senha</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          minlength="4"
+          [(ngModel)]="password"
+          #password="ngModel"
+          placeholder="••••••"
+          [class.invalid]="password.invalid && password.touched"
+        />
+        <span class="field-hint" *ngIf="password.invalid && password.touched">
+          A senha deve ter ao menos 4 caracteres.
+        </span>
+      </div>
+
+      <button type="submit" class="btn btn-accent" [disabled]="loading" style="width:100%">
+        {{ loading ? 'Entrando...' : 'Entrar' }}
+      </button>
+    </form>
+
+    <p class="hint">
+      Use as credenciais criadas pelo backend (endpoint <code>/api/auth/register</code>) ou
+      pelas seeds de teste.
+    </p>
+  </div>
+</div>

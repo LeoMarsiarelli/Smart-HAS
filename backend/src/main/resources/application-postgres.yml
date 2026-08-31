@@ -1,0 +1,14 @@
+# Profile alternativo para produção/homologação usando PostgreSQL.
+# Ative com: --spring.profiles.active=postgres
+# (roadmap: uma variante equivalente pode apontar para Firebase/Firestore
+# como camada de persistência gerenciada, caso o time opte por essa rota).
+spring:
+  datasource:
+    url: ${SMARTHAS_DB_URL:jdbc:postgresql://localhost:5432/smarthas}
+    username: ${SMARTHAS_DB_USER:smarthas}
+    password: ${SMARTHAS_DB_PASSWORD:smarthas}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect

@@ -1,0 +1,75 @@
+<div class="page">
+  <h1>Olá, {{ auth.currentUser?.name }} 👋</h1>
+  <p class="subtitle">
+    Resumo geral do Smart HAS — leituras de pressão e solicitações de entrega de medicamento
+    priorizadas pela AI Logistics Extension.
+  </p>
+
+  <div class="loading" *ngIf="loading">
+    <span class="spinner"></span>
+    <span>Carregando resumo...</span>
+  </div>
+
+  <div class="banner banner-error" *ngIf="errorMessage && !loading">
+    {{ errorMessage }}
+    <button type="button" class="btn btn-sm" (click)="loadOverview()">Tentar novamente</button>
+  </div>
+
+  <ng-container *ngIf="!loading && !errorMessage">
+    <section class="card">
+      <h2>Totais</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">{{ readings.length }}</div>
+          <div class="stat-label">Leituras registradas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ deliveries.length }}</div>
+          <div class="stat-label">Solicitações de entrega</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ pendingDeliveries }}</div>
+          <div class="stat-label">Entregas pendentes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ urgentDeliveries }}</div>
+          <div class="stat-label">Prioridade urgente</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Leituras por classificação</h2>
+      <div class="banner-empty" *ngIf="classificationCounts.length === 0">
+        Nenhuma leitura registrada ainda.
+      </div>
+      <div class="stats-grid" *ngIf="classificationCounts.length > 0">
+        <div class="stat-card" *ngFor="let entry of classificationCounts">
+          <div class="stat-value">{{ entry.count }}</div>
+          <div class="stat-label">
+            <span class="badge" [class]="'badge-' + (entry.key | lowercase)">
+              {{ entry.key }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Entregas por prioridade (AI Logistics)</h2>
+      <div class="banner-empty" *ngIf="priorityCounts.length === 0">
+        Nenhuma solicitação de entrega ainda.
+      </div>
+      <div class="stats-grid" *ngIf="priorityCounts.length > 0">
+        <div class="stat-card" *ngFor="let entry of priorityCounts">
+          <div class="stat-value">{{ entry.count }}</div>
+          <div class="stat-label">
+            <span class="badge" [class]="'badge-' + (entry.key | lowercase)">
+              {{ entry.key }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</div>
