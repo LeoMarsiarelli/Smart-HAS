@@ -21,6 +21,7 @@
         <java.version>17</java.version>
         <jjwt.version>0.12.6</jjwt.version>
         <springdoc.version>2.6.0</springdoc.version>
+        <ojdbc.version>23.4.0.24.05</ojdbc.version>
     </properties>
 
     <dependencies>
@@ -31,6 +32,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -50,6 +55,17 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <!-- Fase 6: driver JDBC para a camada de inteligência Oracle (PL/SQL).
+                 Usado apenas quando o profile "oracle" está ativo; não interfere
+                 no datasource principal (H2/Postgres) usado pelo JPA.
+                 Escopo de compilação (não "runtime") porque o código Java usa
+                 oracle.jdbc.OracleTypes.CURSOR diretamente para ler o
+                 SYS_REFCURSOR retornado por PRC_USER_DELIVERY_REPORT. -->
+            <groupId>com.oracle.database.jdbc</groupId>
+            <artifactId>ojdbc11</artifactId>
+            <version>${ojdbc.version}</version>
         </dependency>
 
         <dependency>

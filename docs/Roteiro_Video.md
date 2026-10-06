@@ -1,140 +1,142 @@
-# Roteiro do Vídeo — Smart HAS (até 5 minutos)
+# Roteiro do Vídeo — Smart HAS Fase 6 (até 5 minutos)
 
-Formato sugerido: tela dividida entre os slides (`Apresentacao_Smart_HAS.pdf`) e a
-demonstração ao vivo (mobile + dashboard + Swagger). Grave em partes e edite,
-ou grave direto seguindo o roteiro — os tempos são um guia, não precisa ser
-cronômetro exato.
+Formato sugerido: tela dividida entre os slides (`Apresentacao_Smart_HAS.pdf`)
+e a demonstração ao vivo (mobile/Swagger + Oracle). Grave em partes e edite,
+ou grave direto seguindo o roteiro — os tempos são um guia, não cronômetro
+exato.
 
-**Antes de gravar**: suba o backend (`mvn spring-boot:run`), o dashboard
-(`npm start` em `web-admin`) e deixe o Expo pronto (`npx expo start`) em
-outra janela, para não perder tempo de gravação esperando build.
-
----
-
-## 0:00 – 0:25 | Abertura (Slide 1 — Capa)
-
-> "Olá! Somos o grupo [nome do grupo] e vamos apresentar o **Smart HAS**,
-> nosso sistema de apoio à decisão para pacientes com Hipertensão Arterial
-> Sistêmica, que nesta fase evoluiu com a camada **AI Logistics Extension**."
-
-Mostrar o slide 1 rapidamente (nomes/RM do grupo já preenchidos).
+**Antes de gravar**, deixe tudo já rodando em janelas separadas, para não
+perder tempo de gravação esperando build/boot:
+1. Container Oracle XE: `docker start smarthas-oracle` (ou suba um novo, ver
+   `database/README.md`) e confirme que aceita conexão.
+2. Backend com a camada Oracle ativa: `cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=oracle`
+3. Um terminal com `sqlplus smarthas/SmartHas123@//localhost:1521/SMARTHAS`
+   logado, pronto para rodar um `SELECT` rápido.
+4. Swagger aberto em `localhost:8080/swagger-ui.html`.
 
 ---
 
-## 0:25 – 0:50 | Contexto (Slide 2)
+## 0:00 – 0:20 | Abertura (Slide 1 — Capa)
 
-> "O Smart HAS acompanha a pressão arterial do paciente e, a partir do risco
-> identificado, nossa camada de IA de logística sugere automaticamente a
-> prioridade e a janela ideal para a entrega do medicamento — sem depender
-> de um operador humano decidindo isso na mão."
+> "Olá! Meu nome é Leonardo Marsiarelli e vou apresentar a evolução do
+> **Smart HAS** nesta fase: a adoção do **Oracle PL/SQL** para dar mais
+> inteligência e robustez ao sistema."
 
-Mostrar o slide 2 (fluxo Leitura → Classificação → Motor de IA → Prioridade).
-
----
-
-## 0:50 – 1:30 | Parte 1: Stack Mobile (Slides 3 e 4)
-
-> "Para o cliente mobile, optamos por **React Native com Expo**. Como o
-> projeto começou esta fase sem uma base Flutter ou Kotlin herdada, escolhemos
-> a stack que trouxesse mais consistência com o nosso dashboard em Angular —
-> os dois compartilham o mesmo raciocínio de componentização e data binding —
-> além de acelerar a demonstração, já que o app roda direto no celular via
-> Expo Go, sem precisar de Android Studio."
-
-Mostrar slide 3 (justificativa + componentes View/Text/Image/Button).
-
-> "Esse é o nosso roadmap: o que já foi definido em fases anteriores, o que
-> entregamos agora, e o que vem a seguir — como evoluir esse motor de regras
-> para um modelo de Machine Learning treinado com dados reais."
-
-Mostrar slide 4 (roadmap).
+Mostrar o slide 1 (nome, RM e turma já preenchidos).
 
 ---
 
-## 1:30 – 2:10 | Parte 2: Backend Spring Boot (Slides 5 e 6)
+## 0:20 – 0:45 | Contexto (Slide 2)
 
-> "No back-end, construímos uma API REST em Java com Spring Boot, separada
-> em camadas de Controller, Service, Repository e Model. Temos autenticação
-> via JWT, banco de dados relacional, validação de dados e documentação
-> interativa via Swagger."
+> "Nas fases anteriores já tínhamos um MVP funcional: app mobile em React
+> Native, backend em Spring Boot com a camada AI Logistics Extension, e um
+> dashboard em Angular. Nesta fase, o objetivo foi levar parte dessa
+> inteligência para dentro do próprio banco de dados, usando Oracle PL/SQL,
+> e integrar isso ao backend Java."
 
-Mostrar slide 5 (arquitetura em camadas).
-
-> "O coração dessa fase é a **AI Logistics Extension**: o `LogisticsAiService`
-> calcula, para cada pedido de entrega, o risco do paciente, a prioridade
-> logística e a janela de entrega — com base na última leitura de pressão
-> registrada. É uma IA baseada em regras, 100% explicável: dá pra auditar
-> exatamente por que uma entrega virou urgente."
-
-Mostrar slide 6 (tabela de prioridades: Crise → Urgente, etc.).
+Mostrar o slide 2.
 
 ---
 
-## 2:10 – 2:40 | Parte 3: Dashboard Angular (Slides 7 e 8)
+## 0:45 – 1:15 | Parte 1: Aprimoramento (Slide 3)
 
-> "Para a equipe de gestão, criamos um dashboard administrativo em Angular,
-> que consome exatamente a mesma API do app mobile. Ele usa rotas protegidas,
-> tabelas dinâmicas com `*ngFor`, filtros com `*ngIf` e `[(ngModel)]`, e um
-> formulário completo para criar e acompanhar pedidos de entrega."
+> "A evolução técnica desta fase foi integrar o Oracle ao backend sem
+> quebrar nada do que já funcionava: criei um datasource Oracle separado,
+> injetado de forma opcional no serviço de leituras — se o Oracle não
+> estiver disponível, o sistema continua funcionando normalmente com H2 ou
+> Postgres. Também criei quatro novos endpoints REST que expõem as regras
+> que agora vivem no banco."
 
-Mostrar slide 7 (mockup do dashboard).
-
-> "No fim, essa é a nossa arquitetura: três front-ends diferentes — mobile,
-> dashboard e a persistência — todos conversando com o mesmo contrato de API."
-
-Mostrar slide 8 (diagrama de integração).
+Mostrar o slide 3.
 
 ---
 
-## 2:40 – 4:20 | Demonstração prática (AO VIVO — não pule esta parte)
+## 1:15 – 2:00 | Parte 2: Banco Oracle (Slides 4 e 5)
 
-Esta é a parte obrigatória: mostrar o app **rodando de verdade**.
+> "Modelei quatro tabelas no Oracle: usuários, leituras de pressão — que
+> representam os dados de sensor —, pedidos de entrega de medicamento, e uma
+> nova tabela de alertas. Esse é o DER completo, validado contra um Oracle
+> real."
 
-**(a) Backend — 15s**
-- Abrir o Swagger (`localhost:8080/swagger-ui.html`) e mostrar rapidamente
-  a lista de endpoints (`/auth`, `/readings`, `/deliveries`).
+Mostrar slide 4 (modelo de dados/DER).
 
-**(b) App mobile — 1min30**
-- Abrir o app no celular/emulador (Expo Go já rodando).
-- **Cadastrar** um novo paciente (tela de Registro).
-- Fazer **login**.
-- Ir em **Leituras** → lançar uma pressão alta, ex. `190 / 125` (crise
-  hipertensiva) → mostrar o badge de classificação aparecendo em vermelho.
-- Ir em **Entregas (AI Logistics)** → solicitar um medicamento (ex.:
-  "Captopril 25mg") → mostrar que a prioridade veio automaticamente como
-  **URGENTE**, com a janela de entrega sugerida — sem o usuário escolher
-  nada disso manualmente.
-- Passar rapidamente pela tela de **Perfil**.
+> "A arquitetura mantém o H2 ou Postgres como banco principal, operado pelo
+> JPA; o Oracle entra como uma camada adicional, acessada via JDBC puro,
+> com CallableStatement chamando diretamente as functions e procedures."
 
-> "Reparem que eu não escolhi a prioridade — o backend calculou isso sozinho
-> a partir da minha última leitura de pressão."
-
-**(c) Dashboard Angular — 1min**
-- Logar como admin (`admin@smarthas.com` / `admin123`) em `localhost:4200`.
-- Ir em `/admin` → mostrar a leitura e a entrega que acabaram de ser
-  criadas no celular aparecendo na tabela (prova de que é a mesma API).
-- Filtrar por prioridade "URGENTE".
-- Atualizar o status da entrega de "Pendente" para "Em rota".
-- Mostrar rapidamente o formulário `[(ngModel)]` de criar nova entrega.
-
-> "Essa é a integração completa: o que o paciente faz no celular aparece em
-> tempo real para a equipe de gestão no dashboard."
+Mostrar slide 5 (dois datasources).
 
 ---
 
-## 4:20 – 5:00 | Conclusão (Slide 10)
+## 2:00 – 2:50 | Parte 3: Functions e Procedures (Slides 6 e 7)
 
-> "Nesta fase, o Smart HAS saiu do papel e virou uma base técnica completa:
-> app mobile em React Native, uma API robusta e segura em Spring Boot com
-> uma camada de IA de logística explicável, e um dashboard administrativo em
-> Angular — todos integrados pelo mesmo contrato de dados."
+> "Criei três functions PL/SQL: FN_CLASSIFY_BP, que classifica a pressão
+> arterial; FN_CALC_RISK_SCORE, que calcula um indicador de risco de 0 a
+> 100; e FN_GET_USER_SUMMARY, que monta um resumo formatado do paciente
+> usando um CURSOR. Todas tratam exceção e têm parâmetros IN e RETURN."
 
-> "Como próximos passos, planejamos evoluir esse motor de regras para um
-> modelo de Machine Learning treinado com dados reais, adicionar
-> notificações push e colocar o sistema em produção na nuvem."
+Mostrar slide 6 (functions + exemplo de SELECT).
 
-> "Obrigado! O código completo está no nosso repositório GitHub, com toda a
-> documentação técnica."
+> "E duas procedures: PRC_REGISTER_CRITICAL_ALERT, que registra um alerta
+> quando a leitura é crítica — e é essa que o backend Java aciona
+> automaticamente, fechando o fluxo REST para Java, para JDBC, para Oracle.
+> E PRC_USER_DELIVERY_REPORT, que usa CURSOR, LOOP e um REF CURSOR de saída
+> para gerar um relatório de entregas por paciente."
+
+Mostrar slide 7 (procedures + fluxo REST→Java→JDBC→Oracle).
+
+---
+
+## 2:50 – 4:10 | Demonstração prática (AO VIVO — não pule esta parte)
+
+Esta é a parte obrigatória: mostrar o app e o Oracle **rodando de verdade**.
+
+**(a) Swagger — 15s**
+- Mostrar rapidamente os endpoints `/api/oracle/**` no Swagger.
+
+**(b) Fluxo crítico via API — 1min15**
+- No Swagger (ou Postman), fazer **login** e depois **POST /api/readings**
+  com uma leitura crítica, ex. `systolic: 195, diastolic: 128`.
+- Mostrar a resposta: `classification: CRISE_HIPERTENSIVA`.
+- Trocar para o terminal com `sqlplus` já logado e rodar:
+  ```sql
+  SELECT a.alert_level, a.message FROM sensor_alert a
+  JOIN app_user u ON u.id = a.user_id
+  ORDER BY a.created_at DESC FETCH FIRST 1 ROWS ONLY;
+  ```
+- Mostrar o alerta `CRITICO` que acabou de ser criado — **sem ter chamado
+  nada manualmente**, só o POST da leitura.
+
+> "Reparem: eu só criei uma leitura pelo app. O backend, por trás, replicou
+> essa leitura pro Oracle e chamou a procedure que registrou o alerta
+> sozinha."
+
+**(c) Functions via Swagger — 45s**
+- `GET /api/oracle/users/{id}/summary` com o id de um paciente seedado →
+  mostrar o resumo formatado vindo direto do banco.
+- `GET /api/oracle/users/{id}/delivery-report` → mostrar o total de pedidos
+  e o detalhe retornado pela procedure com cursor.
+
+**(d) App mobile ou dashboard — 30s (opcional, se der tempo)**
+- Mostrar rapidamente o app mobile ou o dashboard Angular funcionando
+  normalmente (prova de que a camada Oracle não quebrou o fluxo principal).
+
+---
+
+## 4:10 – 5:00 | Conclusão (Slide 10)
+
+> "Nesta fase, o Smart HAS consolidou a interoperabilidade entre mobile,
+> web, API REST e banco Oracle. As mesmas regras de negócio agora vivem
+> tanto em Java quanto em PL/SQL, prontas para serem reaproveitadas por
+> qualquer outro cliente que converse com o banco — um relatório de BI, por
+> exemplo, sem precisar reimplementar nada."
+
+> "Como próximo passo, pretendo evoluir esse motor de regras — tanto o
+> Java quanto o PL/SQL — para um modelo de Machine Learning treinado com
+> dados reais, e levar o Oracle para a nuvem com Autonomous Database."
+
+> "Obrigado! O código completo, os scripts SQL e toda a documentação estão
+> no repositório GitHub."
 
 Mostrar slide 10 e, se quiser, o link do repositório na tela por 2-3s.
 
@@ -143,7 +145,7 @@ Mostrar slide 10 e, se quiser, o link do repositório na tela por 2-3s.
 ## Checklist antes de publicar
 
 - [ ] Vídeo com até 5 minutos
-- [ ] Demonstração prática do app **rodando de verdade** (não só slides)
+- [ ] Demonstração prática rodando de verdade contra o Oracle (não só slides)
 - [ ] Publicado no YouTube como **não listado**
 - [ ] Link testado em aba anônima (confirma que abre sem estar logado)
 - [ ] Link colocado no documento Word/PDF e nos slides (placeholders já

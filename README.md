@@ -7,13 +7,14 @@ de entrega de medicamentos com base no risco clínico calculado a partir das
 leituras de pressão arterial do paciente — alinhado aos princípios da
 Sociedade 5.0 (tecnologia a serviço do cuidado centrado na pessoa).
 
-Monorepo com os três entregáveis da atividade:
+Monorepo com os entregáveis da atividade:
 
 ```
 /mobile      React Native (Expo) — app do paciente
-/backend     Spring Boot — API REST + persistência + IA de logística
+/backend     Spring Boot — API REST + persistência + IA de logística + integração Oracle (Fase 6)
 /web-admin   Angular — dashboard administrativo
-/docs        Contrato de API e documentação da atividade
+/database    Fase 6 — scripts PL/SQL (schema, seed, functions, procedures) para Oracle
+/docs        Contrato de API, DER e documentação da atividade
 ```
 
 ## Parte 1 — Stack mobile: React Native
@@ -56,6 +57,24 @@ estados condicionais (`*ngIf`), formulário com `[(ngModel)]`, e rotas
 
 Ver detalhes em [`web-admin/README.md`](web-admin/README.md).
 
+## Fase 6 — Camada Oracle (PL/SQL) + integração com o backend
+
+Estendemos a arquitetura com uma camada de persistência e inteligência
+**Oracle**: tabelas dedicadas (`APP_USER`, `BLOOD_PRESSURE_READING`,
+`MEDICATION_DELIVERY_REQUEST`, `SENSOR_ALERT`), três *functions* PL/SQL
+(`FN_CLASSIFY_BP`, `FN_CALC_RISK_SCORE`, `FN_GET_USER_SUMMARY`) e duas
+*procedures* (`PRC_REGISTER_CRITICAL_ALERT`, `PRC_USER_DELIVERY_REPORT`),
+todas com tratamento de exceção, `CURSOR`/`LOOP` e comentários explicando o
+propósito. O backend Spring Boot chama essas functions/procedures via JDBC
+(`CallableStatement`) por meio de um datasource Oracle independente —
+inclusive automaticamente a cada nova leitura de pressão salva pelo app
+(`POST /api/readings`), fechando o fluxo **REST → Java → JDBC → Oracle**.
+
+Tudo foi validado de ponta a ponta contra um Oracle Database XE 21c real
+(não é só script "no papel"). Ver [`database/README.md`](database/README.md)
+(schema, seed, DER) e a seção "Integração Oracle" em
+[`backend/README.md`](backend/README.md).
+
 ## Rodando o projeto completo localmente
 
 ```bash
@@ -79,22 +98,22 @@ Usuários de demonstração (criados automaticamente pelo backend):
 ## Roadmap tecnológico
 
 - ✅ **Concluído em fases anteriores:** definição do escopo estratégico do
-  Smart HAS, planejamento da arquitetura e protótipos iniciais de app
-  mobile (Flutter/Kotlin, conforme o time optasse), conforme o histórico do
-  curso.
-- ✅ **Concluído nesta fase (evolução técnica):** app mobile completo em
-  React Native com navegação por telas (login, dashboard, leituras,
-  AI Logistics, perfil); API REST completa em Spring Boot com autenticação,
-  persistência e a camada AI Logistics Extension (motor de regras de
-  priorização); dashboard administrativo em Angular integrado à mesma API.
+  Smart HAS; planejamento da arquitetura; app mobile em React Native,
+  backend Spring Boot com autenticação JWT e AI Logistics Extension,
+  dashboard administrativo em Angular — MVP funcional e conectado.
+- ✅ **Concluído nesta fase (Fase 6):** camada de persistência e
+  inteligência Oracle (schema, dados simulados, DER); functions e
+  procedures PL/SQL com boas práticas (`EXCEPTION`, `CURSOR`, `LOOP`,
+  parâmetros `IN`/`OUT`); integração do backend Java com o Oracle via JDBC,
+  incluindo o acionamento automático de uma procedure a partir de um evento
+  REST real (nova leitura de pressão → alerta crítico registrado no banco).
 - 🔜 **Planejado para as próximas fases:** evoluir o motor de regras
-  `LogisticsAiService` para um modelo de Machine Learning treinado com dados
+  (Java e PL/SQL) para um modelo de Machine Learning treinado com dados
   históricos reais de entregas e adesão ao tratamento; notificações push no
   app mobile para alertas de pressão crítica e status de entrega; deploy em
-  nuvem do backend (ex.: contêiner + banco PostgreSQL gerenciado) e do
-  dashboard; testes automatizados de ponta a ponta (E2E) para as três
-  camadas; papéis de acesso mais granulares (ex.: cuidador/familiar) no
-  dashboard administrativo.
+  nuvem do backend e do Oracle (ex.: Oracle Autonomous Database) e do
+  dashboard; testes automatizados de ponta a ponta (E2E); papéis de acesso
+  mais granulares (ex.: cuidador/familiar) no dashboard administrativo.
 
 ## Documentação da atividade
 

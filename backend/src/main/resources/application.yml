@@ -28,6 +28,11 @@ smarthas:
     # ambiente SMARTHAS_JWT_SECRET com um valor forte e secreto (>= 256 bits).
     secret: ${SMARTHAS_JWT_SECRET:smart-has-dev-secret-key-change-me-please-32bytes-min}
     expiration-ms: 86400000 # 24h
+  oracle:
+    # Camada de inteligência Oracle (Fase 6): desativada por padrão. Ative com
+    # --spring.profiles.active=oracle (ver application-oracle.yml). Datasource
+    # independente do usado pelo JPA — não substitui H2/Postgres nesta fase.
+    enabled: false
 
 springdoc:
   swagger-ui:
