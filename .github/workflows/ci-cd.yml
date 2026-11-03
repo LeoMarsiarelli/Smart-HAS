@@ -89,7 +89,7 @@ jobs:
           CID=$(docker ps -qf "ancestor=gvenzl/oracle-xe:21-slim")
           echo "Oracle container: $CID"
           for i in $(seq 1 60); do
-            if docker exec "$CID" bash -c "echo 'select 1 from dual;' | sqlplus -s smarthas/SmartHas123@//localhost:1521/SMARTHAS" 2>/dev/null | grep -q "^1$"; then
+            if docker exec "$CID" bash -c "echo 'set heading off feedback off verify off; select 1 from dual;' | sqlplus -s smarthas/SmartHas123@//localhost:1521/SMARTHAS" 2>/dev/null | tr -d '[:space:]' | grep -q "^1$"; then
               echo "Oracle ready after ~$((i * 5))s"
               exit 0
             fi
