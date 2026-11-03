@@ -119,10 +119,14 @@ jobs:
       - name: Fail if any uncaught Oracle/SQL*Plus error leaked into the log
         run: |
           # Linhas que começam com ORA-/PLS-/SP2- indicam erro não tratado do
-          # sqlplus ou do compilador PL/SQL. O único ORA- esperado no log
-          # está embutido dentro de uma mensagem de DBMS_OUTPUT (não começa
-          # a linha), referente à exceção tratada de propósito no exemplo 7.
-          if grep -En "^(ORA-|PLS-|SP2-)" oracle-integration.log; then
+          # sqlplus ou do compilador PL/SQL. As exceções ORA-20010..ORA-20040
+          # são os códigos customizados do próprio SMARTHAS_PKG, levantados e
+          # tratados de propósito no exemplo 7 (DBMS_OUTPUT pode quebrar essa
+          # mensagem em múltiplas linhas, então ela é excluída explicitamente
+          # em vez de assumir que nunca começa uma linha).
+          MATCHES=$(grep -En "^(ORA-|PLS-|SP2-)" oracle-integration.log | grep -Ev "ORA-20(01[0-9]|02[0-9]|03[0-9]|040)" || true)
+          if [ -n "$MATCHES" ]; then
+            echo "$MATCHES"
             echo "Unexpected uncaught error found in integration log" >&2
             exit 1
           fi
