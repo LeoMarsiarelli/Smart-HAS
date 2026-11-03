@@ -3,6 +3,7 @@ package com.smarthas.backend.oracle;
 import com.smarthas.backend.oracle.OracleDtos.AlertResponse;
 import com.smarthas.backend.oracle.OracleDtos.DeliveryReportLine;
 import com.smarthas.backend.oracle.OracleDtos.DeliveryReportResponse;
+import com.smarthas.backend.oracle.OracleDtos.ReadingSearchLine;
 import com.smarthas.backend.oracle.OracleDtos.RiskScoreResponse;
 import com.smarthas.backend.oracle.OracleDtos.UserSummaryResponse;
 import oracle.jdbc.OracleTypes;
@@ -35,6 +36,10 @@ import java.util.List;
  * {@code BloodPressureService} logo após salvar a leitura, que implementa o
  * fluxo pedido pela atividade: REST (POST /api/readings) -&gt; Java -&gt;
  * JDBC -&gt; Oracle (PRC_REGISTER_CRITICAL_ALERT).
+ * <p>
+ * Todas as chamadas são qualificadas com {@code smarthas_pkg.}, já que as
+ * functions/procedures foram consolidadas em um único package PL/SQL
+ * (ver database/03_package_smarthas.sql).
  */
 @Service
 @ConditionalOnProperty(prefix = "smarthas.oracle", name = "enabled", havingValue = "true")
@@ -51,7 +56,7 @@ public class OracleIntelligenceService {
         String classification = classify(systolic, diastolic);
 
         Integer score = oracleJdbcTemplate.execute((ConnectionCallback<Integer>) con -> {
-            try (CallableStatement cs = con.prepareCall("{ ? = call fn_calc_risk_score(?, ?) }")) {
+            try (CallableStatement cs = con.prepareCall("{ ? = call smarthas_pkg.fn_calc_risk_score(?, ?) }")) {
                 cs.registerOutParameter(1, Types.NUMERIC);
                 cs.setInt(2, systolic);
                 cs.setInt(3, diastolic);
@@ -66,7 +71,7 @@ public class OracleIntelligenceService {
     /** FN_GET_USER_SUMMARY — dados formatados do paciente, montados no banco. */
     public UserSummaryResponse getUserSummary(Long userId) {
         String summary = oracleJdbcTemplate.execute((ConnectionCallback<String>) con -> {
-            try (CallableStatement cs = con.prepareCall("{ ? = call fn_get_user_summary(?) }")) {
+            try (CallableStatement cs = con.prepareCall("{ ? = call smarthas_pkg.fn_get_user_summary(?) }")) {
                 cs.registerOutParameter(1, Types.VARCHAR);
                 cs.setLong(2, userId);
                 cs.execute();
@@ -79,7 +84,7 @@ public class OracleIntelligenceService {
     /** PRC_REGISTER_CRITICAL_ALERT — avalia a leitura e registra alerta se crítica. */
     public AlertResponse registerCriticalAlert(Long readingId) {
         oracleJdbcTemplate.execute((ConnectionCallback<Void>) con -> {
-            try (CallableStatement cs = con.prepareCall("{ call prc_register_critical_alert(?) }")) {
+            try (CallableStatement cs = con.prepareCall("{ call smarthas_pkg.prc_register_critical_alert(?) }")) {
                 cs.setLong(1, readingId);
                 cs.execute();
                 return null;
@@ -91,7 +96,7 @@ public class OracleIntelligenceService {
     /** PRC_USER_DELIVERY_REPORT — OUT NUMBER, OUT NUMBER, OUT SYS_REFCURSOR. */
     public DeliveryReportResponse getUserDeliveryReport(Long userId) {
         return oracleJdbcTemplate.execute((ConnectionCallback<DeliveryReportResponse>) con -> {
-            try (CallableStatement cs = con.prepareCall("{ call prc_user_delivery_report(?, ?, ?, ?) }")) {
+            try (CallableStatement cs = con.prepareCall("{ call smarthas_pkg.prc_user_delivery_report(?, ?, ?, ?) }")) {
                 cs.setLong(1, userId);
                 cs.registerOutParameter(2, Types.NUMERIC);
                 cs.registerOutParameter(3, Types.NUMERIC);
@@ -119,6 +124,60 @@ public class OracleIntelligenceService {
     }
 
     /**
+     * PRC_SEARCH_READINGS — busca flexível de leituras, implementada com
+     * Dynamic SQL no banco (ver database/03_package_smarthas.sql): todos os
+     * filtros são opcionais e a ordenação é escolhida em tempo real.
+     *
+     * @param userId         filtro opcional por paciente
+     * @param classification filtro opcional por classificação da pressão
+     * @param since          filtro opcional: leituras a partir desta data/hora
+     * @param orderBy        um de MEASURED_AT_DESC (padrão), MEASURED_AT_ASC,
+     *                       SYSTOLIC_DESC, RISK_DESC
+     */
+    public List<ReadingSearchLine> searchReadings(Long userId, String classification, LocalDateTime since, String orderBy) {
+        String effectiveOrderBy = orderBy != null ? orderBy : "MEASURED_AT_DESC";
+
+        return oracleJdbcTemplate.execute((ConnectionCallback<List<ReadingSearchLine>>) con -> {
+            try (CallableStatement cs = con.prepareCall("{ call smarthas_pkg.prc_search_readings(?, ?, ?, ?, ?) }")) {
+                if (userId != null) {
+                    cs.setLong(1, userId);
+                } else {
+                    cs.setNull(1, Types.NUMERIC);
+                }
+                if (classification != null) {
+                    cs.setString(2, classification);
+                } else {
+                    cs.setNull(2, Types.VARCHAR);
+                }
+                if (since != null) {
+                    cs.setTimestamp(3, Timestamp.valueOf(since));
+                } else {
+                    cs.setNull(3, Types.TIMESTAMP);
+                }
+                cs.setString(4, effectiveOrderBy);
+                cs.registerOutParameter(5, OracleTypes.CURSOR);
+                cs.execute();
+
+                List<ReadingSearchLine> results = new ArrayList<>();
+                try (ResultSet rs = (ResultSet) cs.getObject(5)) {
+                    while (rs.next()) {
+                        results.add(new ReadingSearchLine(
+                                rs.getLong("id"),
+                                rs.getLong("user_id"),
+                                rs.getString("name"),
+                                rs.getInt("systolic"),
+                                rs.getInt("diastolic"),
+                                rs.getString("classification"),
+                                rs.getTimestamp("measured_at").toLocalDateTime()
+                        ));
+                    }
+                }
+                return results;
+            }
+        });
+    }
+
+    /**
      * Ponto de integração acionado pelo backend a cada nova leitura real do
      * app: replica a leitura para o Oracle (criando o usuário por lá na
      * primeira vez, casado por email) e aciona PRC_REGISTER_CRITICAL_ALERT
@@ -135,7 +194,7 @@ public class OracleIntelligenceService {
 
     private String classify(int systolic, int diastolic) {
         return oracleJdbcTemplate.execute((ConnectionCallback<String>) con -> {
-            try (CallableStatement cs = con.prepareCall("{ ? = call fn_classify_bp(?, ?) }")) {
+            try (CallableStatement cs = con.prepareCall("{ ? = call smarthas_pkg.fn_classify_bp(?, ?) }")) {
                 cs.registerOutParameter(1, Types.VARCHAR);
                 cs.setInt(2, systolic);
                 cs.setInt(3, diastolic);

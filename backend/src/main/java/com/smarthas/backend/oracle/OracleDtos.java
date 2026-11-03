@@ -23,4 +23,10 @@ public class OracleDtos {
 
     public record AlertResponse(Long readingId, boolean registered, String message) {
     }
+
+    public record ReadingSearchLine(
+            Long id, Long userId, String userName, int systolic, int diastolic,
+            String classification, LocalDateTime measuredAt
+    ) {
+    }
 }
